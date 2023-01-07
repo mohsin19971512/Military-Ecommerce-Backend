@@ -54,19 +54,15 @@ class Size_Out(Schema) :
     id : UUID4 = None
     size : str = None
 
+class SizeListOut(Schema):
+    sizes: List[Size_Out] = None
 class ProductImageOut(Schema) :
     image : str = None
-class ProductOut(ModelSchema):
-    label: LabelOut
-    category: CategoryOut
-    product_type : ProductTypeOut = None
-    product_size : list[Size_Out] 
-    img : list[ProductImageOut] 
 
 
-    class Config:
-        model = Product
-        model_fields = ['id',
+
+
+ProductSchemaOut = create_schema(Product, depth=2, fields=['id',
                         'name',
                         'description',
                         'img',
@@ -76,27 +72,15 @@ class ProductOut(ModelSchema):
                         'category',
                         'product_type',
                         'label',
+                        'product_size'
 
-
-                        ]
-
-
-# class ProductManualSchemaOut(Schema):
-#     pass
-
-
-class CitySchema(Schema):
-    name: str
-
-
-class CitiesOut(CitySchema, UUIDSchema):
-    pass
+])
 
 
 class ItemSchema(Schema):
     # user:
     id : UUID4
-    product: ProductOut
+    product: ProductSchemaOut
     item_qty: int
     ordered: bool
     item_total : str = None
@@ -120,6 +104,9 @@ class OrderOut(UUIDSchema) :
     items : List[ItemSchema]
     ref_code : str = None
 
+class OrderStatusOut(UUIDSchema) :
+    title : str = None
+
 class OrderSchemaOut(UUIDSchema) :
     id: UUID4
     note : str = None
@@ -127,6 +114,7 @@ class OrderSchemaOut(UUIDSchema) :
     total_items : str = None
     total_price : str = None
     created : datetime.datetime = None
+    status :OrderStatusOut = None
 
 
 class AddressOut(UUIDSchema):
@@ -141,7 +129,6 @@ class AddressIn(Schema):
     work_address : bool = None
     address1 : str
     address2 : str 
-    city : str  = None
     phone : str
     note : str = None
 
@@ -154,3 +141,28 @@ class CartSchemaOut(Schema):
     total_price : TotalPriceOut = None
 
 
+
+
+""" class ProductOut(ModelSchema):
+    label: LabelOut
+    category: CategoryOut
+    product_type : ProductTypeOut = None
+    product_size : list[Size_Out] 
+    img : list[ProductImageOut] 
+
+
+    class Config:
+        model = Product
+        model_fields = ['id',
+                        'name',
+                        'description',
+                        'img',
+                        'qty',
+                        'price',
+                        'discounted_price',
+                        'category',
+                        'product_type',
+                        'label',
+
+
+                        ] """

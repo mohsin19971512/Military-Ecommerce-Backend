@@ -17,13 +17,14 @@ class Product(Entity):
     img = models.ManyToManyField('commerce.ProductImage',verbose_name="الصور",related_name='products')
     price = models.DecimalField('السعر', max_digits=10, decimal_places=0)
     discounted_price = models.DecimalField('الخصم', max_digits=10, decimal_places=0)
-    product_size = models.ManyToManyField('commerce.ProductSize',verbose_name="الحجم",related_name='products')
+    count_sold  = models.IntegerField(' الكمية المباعة ',null=True,blank=True)
+    product_size = models.ForeignKey('commerce.ProductSize',on_delete=models.SET_NULL,verbose_name="الحجم",related_name='products',null=True,blank=True)
     
     category = models.ForeignKey('commerce.Category', verbose_name='الصنف', related_name='products',
                                  null=True,
                                  blank=True,
                                  on_delete=models.SET_NULL)
-    product_type = models.ForeignKey('commerce.ProductType',null=True,on_delete=models.SET_NULL,related_name="النوع")
+    product_type = models.ForeignKey('commerce.ProductType',verbose_name="نوع المنتج",null=True,on_delete=models.SET_NULL,related_name="النوع")
     is_active = models.BooleanField('is active' , default=True)
     label = models.ForeignKey('commerce.Label', verbose_name='label', related_name='products', null=True, blank=True,
                               on_delete=models.CASCADE)
@@ -71,6 +72,7 @@ class Order(Entity):
     class Meta:
         verbose_name = 'الطلب'
         verbose_name_plural = 'الطلبات'
+        ordering = ('-created',)
 
 
 class Item(Entity):
@@ -82,7 +84,7 @@ class Item(Entity):
     product = models.ForeignKey('commerce.Product', verbose_name='product',
                            on_delete=models.CASCADE)
     item_qty = models.IntegerField('item_qty')
-    item_size = models.ForeignKey('commerce.ProductSize',null=True,on_delete=models.SET_NULL,verbose_name="Size",related_name='items')
+    item_size = models.ForeignKey('commerce.Size',null=True,on_delete=models.SET_NULL,verbose_name="Size",related_name='items')
 
     ordered = models.BooleanField('ordered', default=False)
     @property
@@ -100,13 +102,22 @@ class Item(Entity):
 
 
 class ProductSize(Entity):
-    size = models.CharField("Size",max_length=20)
+    sizes = models.ManyToManyField("commerce.Size",verbose_name="الحجم")
+    
     def __str__(self):
-        return self.size
+        s = [s.size for s in self.sizes.all()]
+        #print (self.sizes.all()[0].size)
+        str1 = '-'.join(str(e) for e in s)
+        return str1
+
     class Meta:
         verbose_name = 'الحجم'
         verbose_name_plural = 'الاحجام'
 
+class Size(Entity):
+    size = models.CharField("الحجم",max_length=20)
+    def __str__(self):
+        return self.size
 
 class OrderStatus(Entity):
     NEW = 'NEW'  # Order with reference created, items are in the basket.
@@ -220,15 +231,7 @@ class Vendor(Entity):
             
 
 
-class City(Entity):
-    name = models.CharField('city', max_length=255)
 
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = 'المدينة'
-        verbose_name_plural = 'المدن'
 
 
 class Address(Entity):
@@ -237,7 +240,6 @@ class Address(Entity):
     work_address = models.BooleanField('work address', null=True, blank=True)
     address1 = models.CharField('address1', max_length=255)
     address2 = models.CharField('address2', null=True, blank=True, max_length=500)
-    city = models.CharField('city', null=True, blank=True, max_length=100)
     phone = models.CharField('phone', max_length=255)
     
 

@@ -152,13 +152,13 @@ JAZZMIN_SETTINGS = {
     "site_icon": None,
 
     # Welcome text on the login screen
-    "welcome_sign": "مرحبا بكم في نتجرنا الالكتروني",
+    "welcome_sign": "مرحبا بكم في متجرنا الالكتروني",
 
     # Copyright on the footer
     #"copyright": "Acme Library Ltd",
 
     # The model admin to search from the search bar, search bar omitted if excluded
-    "search_model": "auth.User",
+    "search_model": "account.User",
 
     # Field name on user model that contains avatar ImageField/URLField/Charfield or a callable that receives the user
     "user_avatar": None,
@@ -171,16 +171,16 @@ JAZZMIN_SETTINGS = {
     "topmenu_links": [
 
         # Url that gets reversed (Permissions can be added)
-        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Home",  "url": "admin:index", "permissions": ["account.view_user"]},
 
         # external url that opens in a new window (Permissions can be added)
         #{"name": "Support", "url": "https://github.com/farridav/django-jazzmin/issues", "new_window": True},
 
         # model admin to link to (Permissions checked against model)
-        {"model": "auth.User"},
+        {"model": "account.User"},
 
         # App with dropdown menu to all its models pages (Permissions checked against models)
-        {"app": "hospital"},
+        {"app": "commerce"},
     ],
 
     #############
@@ -213,21 +213,21 @@ JAZZMIN_SETTINGS = {
     "order_with_respect_to": ["account.user", "commerce.Product" ,"commerce.Order", "commerce.Item","commerce.Category","commerce.ProductType","commerce.ProductSize","commerce.OrderStatus"],
 
     # Custom links to append to app groups, keyed on app name
-    "custom_links": {
-        "books": [{
+"""     "custom_links": {
+        "commerce": [{
             "name": "Make Messages",
             "url": "make_messages",
             "icon": "fas fa-comments",
-            "permissions": ["books.view_book"]
+            "permissions": ["commerce"]
         }]
     },
-
+ """
     # Custom icons for side menu apps/models See https://fontawesome.com/icons?d=gallery&m=free&v=5.0.0,5.0.1,5.0.10,5.0.11,5.0.12,5.0.13,5.0.2,5.0.3,5.0.4,5.0.5,5.0.6,5.0.7,5.0.8,5.0.9,5.1.0,5.1.1,5.2.0,5.3.0,5.3.1,5.4.0,5.4.1,5.4.2,5.13.0,5.12.0,5.11.2,5.11.1,5.10.0,5.9.0,5.8.2,5.8.1,5.7.2,5.7.1,5.7.0,5.6.3,5.5.0,5.4.2
     # for the full list of 5.13.0 free icon classes
     "icons": {
-        "auth": "fas fa-users-cog",
-        "auth.user": "fas fa-user",
-        "auth.Group": "fas fa-users",
+        "account": "fas fa-users-cog",
+        "account.user": "fas fa-user",
+        "account.Group": "fas fa-users",
     },
     # Icons that are used when one is not manually specified
     "default_icon_parents": "fas fa-chevron-circle-right",
@@ -259,7 +259,7 @@ JAZZMIN_SETTINGS = {
     # - carousel
     "changeform_format": "horizontal_tabs",
     # override change forms on a per modeladmin basis
-    "changeform_format_overrides": {"auth.user": "collapsible", "auth.group": "vertical_tabs"},
+    "changeform_format_overrides": {"account.user": "collapsible", "account.group": "vertical_tabs"},
     # Add a language dropdown into the admin
     #"language_chooser": True,
     "show_ui_builder" :True

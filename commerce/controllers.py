@@ -10,12 +10,12 @@ from ninja import Router
 from pydantic import UUID4
 
 from account.authorization import GlobalAuth
-from commerce.models import Address, Product, Category, ProductSize, Vendor, Item, Order, OrderStatus, ProductType
-from commerce.schemas import AddressIn, OrderSchemaOut, CartSchemaOut, ProductTypeOut, ProductOut, VendorOut, ItemOut, ItemCreate, CategoryOut
+from commerce.models import Address,Size, Product, Category, ProductSize, Vendor, Item, Order, OrderStatus, ProductType
+from commerce.schemas import ProductSchemaOut, AddressIn, OrderSchemaOut, CartSchemaOut, ProductTypeOut, VendorOut, ItemOut, ItemCreate, CategoryOut
 from config.utils.schemas import MessageOut
 import string
 import random
-
+import datetime
 products_controller = Router(tags=['products'])
 vendor_controller = Router(tags=['vendors'])
 order_controller = Router(tags=['orders'])
@@ -32,7 +32,7 @@ def list_vendors(request):
 
 
 @products_controller.get('', response={
-    200: List[ProductOut],
+    200: List[ProductSchemaOut],
     404: MessageOut
 })
 def list_products(
@@ -61,8 +61,32 @@ def list_products(
     return products_qs
 
 
+@products_controller.get('best-selling-products', response={
+    200: List[ProductSchemaOut],
+    404: MessageOut
+})
+def list_of_best_selling_products(
+        request,
+):
+    products_qs = Product.objects.all().order_by("-count_sold")[:10]
+
+    return products_qs
+
+
+@products_controller.get('latest-products', response={
+    200: List[ProductSchemaOut],
+    404: MessageOut
+})
+def latest_products(
+        request,
+):
+    products_qs = Product.objects.all().order_by("-created")[:10]
+
+    return products_qs
+
+
 @products_controller.get('products/{product_id}', response={
-    200: ProductOut,
+    200: ProductSchemaOut,
     404: MessageOut
 })
 def productDetails(request, product_id: UUID4):
@@ -97,24 +121,25 @@ def view_cart(request):
 def add_update_cart(request, item_in: ItemCreate):
     try:
         user = get_object_or_404(User, id=request.auth['pk'])
-        
+
         if item_in.item_size_id:
-            product_size = ProductSize.objects.get(id=item_in.item_size_id)
+            product_size = Size.objects.get(id=item_in.item_size_id)
             item = Item.objects.get(
-                product_id=item_in.product_id, user=user, item_size=product_size,ordered=False)
+                product_id=item_in.product_id, user=user, item_size=product_size, ordered=False)
             item.item_qty += 1
         else:
             item = Item.objects.get(
-                product_id=item_in.product_id, user=user,ordered=False)
+                product_id=item_in.product_id, user=user, ordered=False)
             item.item_qty += 1
         #item_exist = Item.objects.get(product_id=item_in.product_id,user=user)
 
     except Item.DoesNotExist:
         if item_in.item_size_id:
-            product_size = ProductSize.objects.get(id=item_in.item_size_id)
-            Item.objects.create(**item_in.dict(), item_size=product_size, ordered=False,user=user)
-        else:    
-            Item.objects.create(**item_in.dict(), ordered=False,user=user)
+            product_size = Size.objects.get(id=item_in.item_size_id)
+            Item.objects.create(
+                **item_in.dict(), item_size=product_size, ordered=False, user=user)
+        else:
+            Item.objects.create(**item_in.dict(), ordered=False, user=user)
 
     return 200, {'detail': 'Added to cart successfully'}
 
@@ -179,11 +204,17 @@ def create_update_order(request, address_in: AddressIn):
     total_price = sum(i.item_total for i in items_qs)
     total_items = sum(i.item_qty for i in items_qs)
     print("items_qs", items_qs)
+
     #order = Order.objects.get(user=user,ordered = False)
     # print("order",order)
     order_qs = Order.objects.filter(user=user, ordered=False)
 
     print("order_qs", order_qs)
+    for i in items_qs:
+        p = Product.objects.get(id=i.product.id)
+        p.qty -= i.item_qty
+        p.save()
+        print("i.product.qty, p.qty", i.product.qty, p.qty)
     if order_qs:
         items_qs.update(ordered=True)
         order_qs.first().ordered = True
@@ -222,7 +253,20 @@ def un_complete_order(request):
 @order_controller.get('completed-order', auth=GlobalAuth(), response={200: list[OrderSchemaOut], 404: MessageOut})
 def completed_order(request):
     user = get_object_or_404(User, id=request.auth['pk'])
-    status = OrderStatus.objects.get(title="COMPLETED")
+    #status = OrderStatus.objects.get_or_create(title="COMPLETED")
+    order = Order.objects.filter(ordered=True, user=user)
+    if user and order:
+        return 200, order
+
+    else:
+        return 404, {"detail": "Your cart is Empty"}
+
+
+@order_controller.get('upcoming-order', auth=GlobalAuth(), response={200: list[OrderSchemaOut], 404: MessageOut})
+def upcoming_order(request, status: str):
+    user = get_object_or_404(User, id=request.auth['pk'])
+    status = OrderStatus.objects.get(title=status)
+
     order = Order.objects.filter(ordered=True, status=status)
     if user and order:
         return 200, order
@@ -248,6 +292,10 @@ def checkout(request, address_in: AddressIn, note: str = None):
     if note:
         checkout.note = note
 
+    for i in checkout.items:
+        i.product.qty -= i.item_qty
+        i.count_sold += i.item_qty
+
     checkout.status = OrderStatus.objects.get(title="PROCESSING")
     checkout.total = checkout.order_total
     checkout.ordered = True
@@ -267,7 +315,7 @@ def category_products(request, category_id: UUID4):
     return types
 
 
-@category_controllers.get('category/{category_id}/{type_id}', response=List[ProductOut])
+@category_controllers.get('category/{category_id}/{type_id}', response=List[ProductSchemaOut])
 def products_category_type(request, category_id: UUID4, type_id: UUID4):
     products = Product.objects.filter(category=Category.objects.get(
         id=category_id), product_type=ProductType.objects.get(id=type_id))
